@@ -328,25 +328,11 @@ bool _cmd_update_cache(cmd_t* cmd) {
     first_token_idx -= 2;
     second_token_idx -= 2;
 
-    printf("Caching flag: %s with value: %s\n", &cmd->buf.buf[first_token_idx], &cmd->buf.buf[second_token_idx]);
 
     // Cache new token as ordered flag with value
     cache.name = first_token_idx;
     cache.value = second_token_idx;
     cmd->buf.chr_len -= 2; // Account for removed "--" characters
-
-    for (int i = 0; i < cmd->buf.chr_len; i++) {
-        char c = cmd->buf.buf[i];
-
-        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
-            printf("%c ", c);
-        } else if (c == 0x00) {
-            printf("/ ");
-        } else {
-            printf("%02X ", c);
-        }
-    }
-    printf("\n");
 
     // Copy new cache entry to end of buffer, growing backwards from the end
     memcpy(&cmd->buf.buf[cmd->buf.cch_idx], &cache, sizeof(cmd_cache_t));
