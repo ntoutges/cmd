@@ -82,8 +82,23 @@ typedef struct cmd_t {
  * @param buf_buf Buffer to hold current command + cache
  * @param buf_size Size of the buf_buf
  * @param initiator Character that indicates a command was sent (eg: '!<cmd>')
+ * @returns The allocated command handler
  */
 cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, uint8_t buf_size, char initiator);
+
+/**
+ * Create a new command handler quickly (fast)
+ * Intended to be used as a on-size-fits-all drop-in solution to ongoing projects
+ * Uses dynamic memory allocation to minimize boilerplate required in getting this running,
+ * yielding a larger memory footprint (and the possiblity of failure) with the benefit of
+ * an easier dev experience
+ * If either the entry buf or buf buf cannot be allocated, that buffer is reduced to a size of 0 B
+ * @param entry_size    The number of commands to allocate space for
+ * @param buf_size      The size of the buf_buf (receive + tag buffer)
+ * @param initiator     Character that indicates a command was sent (eg: '!<cmd>')
+ * @return The allocated command handler
+ */
+cmd_t cmd_f(uint8_t entry_size, uint8_t buf_size, char initiator);
 
 /**
  * Trigger on receiving a command character

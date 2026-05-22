@@ -27,6 +27,17 @@ cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, uint8_t 
     };
 }
 
+cmd_t cmd_f(uint8_t entry_size, uint8_t buf_size, char initiator) {
+    cmd_entry_t* entry_buf = (cmd_entry_t*) malloc(entry_size * sizeof(cmd_entry_t));
+    uint8_t* buf_buf = (uint8_t*) malloc(buf_size * sizeof(uint8_t));
+
+    if (entry_buf == NULL) entry_size = 0; // Failed to allocate entries
+    if (buf_buf == NULL) buf_size = 0; // Failed to allocate main buf
+
+    // Create `cmd` using the allocated buffers
+    return cmd(entry_buf, entry_size, buf_buf, buf_size, initiator);
+}
+
 bool cmd_recv(cmd_t* cmd, char ch) {
     if (ch == '\r') return false; // Ignore the evil character
 
