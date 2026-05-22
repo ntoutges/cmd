@@ -26,7 +26,7 @@ cmd_t myCmd;
 // Callback to register
 // Increment `checksum` by `base` + ogeti(0)
 void regCB(void* base) {
-    checksum += *((uint8_t*) base);
+    checksum += *((uint8_t*) base) + cmd_cogeti(1, 0);
 }
 
 #define EPSILON 0.0001
@@ -83,17 +83,17 @@ int main() {
     uint8_t base = 1;
     uint8_t inc_id = cmd_attach(&myCmd, "inc", regCB, &base);
 
-    send_command(&myCmd, "!inc");
-    assert(checksum == 1);
+    send_command(&myCmd, "!inc 2");
+    assert(checksum == 3); // 1 (base) + 2 = 3
 
-    send_command(&myCmd, "!inc");
-    assert(checksum == 2);
+    send_command(&myCmd, "!inc 3");
+    assert(checksum == 7); // 3 + 1 (base) + 3 = 7
 
-    send_command(&myCmd, "!nop");
-    assert(checksum == 2); // Didn't increment
+    send_command(&myCmd, "!nop 10");
+    assert(checksum == 7); // Didn't increment
 
-    send_command(&myCmd, "!inc");
-    assert(checksum == 3); // Didn't increment
+    send_command(&myCmd, "!inc 4");
+    assert(checksum == 12); // 7 + 1 (base) + 4 = 12
 
     // ======== ENSURE CALLBACKS CAN BE DETACHED ========
     cmd_detach(&myCmd, inc_id);
@@ -101,6 +101,45 @@ int main() {
 
     send_command(&myCmd, "!inc");
     assert(checksum == 0); // Should NOP now
+
+    // ======== TEST "CURRENT" COMMANDS
+    // Note: Intentionally reuses earlier testcase for easier isolation
+
+    cmd_curr(&myCmd);
+    send_command(&myCmd, "!test get 1.2 0 --a 10 --b 20 --c 30 -xyz");
+
+    // Check ordered values
+    assert(strcmp(cmd_cogets(0, ""), "test") == 0);
+    assert(strcmp(cmd_cogets(1, ""), "get") == 0);
+    assert(strcmp(cmd_cogets(2, ""), "1.2") == 0);
+    assert(strcmp(cmd_cogets(3, ""), "0") == 0);
+
+    // Check ordered value parsing
+    assert(cmd_cogeti(2, 0) == 1);
+    assert(abs(cmd_cogetf(2, 0) - 1.2) < EPSILON);
+    assert(cmd_cogetb(2, false) == true);
+    assert(cmd_cogetb(3, false) == false);
+
+    // Check unordered values
+    assert(strcmp(cmd_cugets("a", ""), "10") == 0);
+    assert(strcmp(cmd_cugets("b", ""), "20") == 0);
+    assert(strcmp(cmd_cugets("c", ""), "30") == 0);
+
+    // Check unordered parsing
+    assert(cmd_cugeti("a", 0) == 10);
+    assert(cmd_cugeti("b", 0) == 20);
+    assert(cmd_cugeti("c", 0) == 30);
+    assert(cmd_cugetb("a", false) == true);
+    assert(cmd_cugetb("b", false) == true);
+    assert(cmd_cugetb("c", false) == true);
+
+    // Check special flag parsing
+    assert(cmd_cugetb("w", false) == false); // Not present: false
+    assert(cmd_cugetb("x", false) == true); // Present in -xyz block
+    assert(cmd_cugetb("y", false) == true); // Present in -xyz block
+    assert(cmd_cugetb("z", false) == true); // Present in -xyz block
+
+    printf("All test cases passed successfully!\n");
 
     return 0;
 }

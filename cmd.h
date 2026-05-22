@@ -101,16 +101,25 @@ cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, uint8_t 
 cmd_t cmd_f(uint8_t entry_size, uint8_t buf_size, char initiator);
 
 /**
+ * Mark the given `cmd` instance as the "current" instance
+ * This will persist until some command instance, in `cmd_recv`, successfully finishes a command
+ * Set to `NULL` to reset or indicate that the `cmd` instance is being retired
+ * 
+ * @param cmd   The `cmd` instance to mark as "current"
+ */
+void cmd_curr(cmd_t* cmd);
+
+/**
  * Trigger on receiving a command character
- * @param ch The received command character
  * @param cmd   The command handler to trigger on
+ * @param ch The received command character
  * @returns     true if the character was part of a command, false otherwise
  */
 bool cmd_recv(cmd_t* cmd, char ch);
 
 /**
  * Attempt to attach a command entry point to the command handler
- * @param cmd Command handler to attach to
+ * @param cmd Command handler to attach to; Pass in NULL to use the "current" command handler. If none exist, NOPs and returns 0xFF
  * @param command Command string (0th ordered argument) to trigger on (eg: "help")
  * @param cb Function to run when the command is triggered
  * @param args Arguments to pass to the function when the command is triggered. The objected pointed to must remain valid when the command is triggered.
@@ -120,7 +129,7 @@ uint8_t cmd_attach(cmd_t* cmd, const char* command, void (*cb)(void* args), void
 
 /**
  * Attempt to detach a command entry point from the command handler
- * @param cmd Command handler to detach from
+ * @param cmd Command handler to detach from; Pass in NULL to use the "current" command handler. If none exist, NOPs and returns 0xFF
  * @param id ID of the command entry to detach
  * @returns The id of the detached command entry, or 0xFF on failure
  */
@@ -128,7 +137,7 @@ uint8_t cmd_detach(cmd_t* cmd, uint8_t id);
 
 /**
  * Attempt to grab an integer value from the unordered command cache
- * @param cmd Command to grab from
+ * @param cmd Command to grab from; Pass in NULL to use the "current" command handler. If none exist, returns default value
  * @param name Name of the argument to grab
  * @param default_val Value to return if the argument is not found
  */
@@ -136,7 +145,7 @@ int cmd_ugeti(cmd_t* cmd, const char* name, int default_val);
 
 /**
  * Attempt to grab a float value from the unordered command cache
- * @param cmd Command to grab from
+ * @param cmd Command to grab from; Pass in NULL to use the "current" command handler. If none exist, returns default value
  * @param name Name of the argument to grab
  * @param default_val Value to return if the argument is not found
  */
@@ -144,7 +153,7 @@ float cmd_ugetf(cmd_t* cmd, const char* name, float default_val);
 
 /**
  * Attempt to grab a boolean value from the unordered command cache
- * @param cmd Command to grab from
+ * @param cmd Command to grab from; Pass in NULL to use the "current" command handler. If none exist, returns default value
  * @param name Name of the argument to grab
  * @param default_val Value to return if the argument is not found
  */
@@ -152,7 +161,7 @@ bool cmd_ugetb(cmd_t* cmd, const char* name, bool default_val);
 
 /**
  * Attempt to grab a boolean value from the ordered command cache
- * @param cmd Command to grab from
+ * @param cmd Command to grab from; Pass in NULL to use the "current" command handler. If none exist, returns default value
  * @param idx Index of the argument to grab (0-indexed)
  * @param default_val Default string value to copy into buffer if argument is not found
  */
@@ -160,7 +169,7 @@ const char* cmd_ugets(cmd_t* cmd, const char* name, const char* default_val);
 
 /**
  * Attempt to grab an integer value from the ordered command cache
- * @param cmd Command to grab from
+ * @param cmd Command to grab from; Pass in NULL to use the "current" command handler. If none exist, returns default value
  * @param idx Index of the argument to grab (0-indexed)
  * @param default_val Value to return if the argument is not found
  */
@@ -168,7 +177,7 @@ int cmd_ogeti(cmd_t* cmd, uint8_t idx, int default_val);
 
 /**
  * Attempt to grab a float value from the ordered command cache
- * @param cmd Command to grab from
+ * @param cmd Command to grab from; Pass in NULL to use the "current" command handler. If none exist, returns default value
  * @param idx Index of the argument to grab (0-indexed)
  * @param default_val Value to return if the argument is not found
  */
@@ -176,7 +185,7 @@ float cmd_ogetf(cmd_t* cmd, uint8_t idx, float default_val);
 
 /**
  * Attempt to grab a boolean value from the ordered command cache
- * @param cmd Command to grab from
+ * @param cmd Command to grab from; Pass in NULL to use the "current" command handler. If none exist, returns default value
  * @param idx Index of the argument to grab (0-indexed)
  * @param default_val Value to return if the argument is not found
  */
@@ -184,11 +193,104 @@ bool cmd_ogetb(cmd_t* cmd, uint8_t idx, bool default_val);
 
 /**
  * Attempt to grab a boolean value from the ordered command cache
- * @param cmd Command to grab from
+ * @param cmd Command to grab from; Pass in NULL to use the "current" command handler. If none exist, returns default value
  * @param idx Index of the argument to grab (0-indexed)
  * @param default_val Default string value to copy into buffer if argument is not found
  */
 const char* cmd_ogets(cmd_t* cmd, uint8_t idx, const char* default_val);
+
+
+// ======== CURRENT SIMPLIFICATIONS OF CMD OPERATIONS ========
+
+/**
+ * Trigger on receiving a command character using the current command instance
+ * If no current command is registered, this NOPs and returns `false`
+ * @param ch The received command character
+ * @returns     true if the character was part of a command, false otherwise
+ */
+bool cmd_crecv(char ch);
+
+/**
+ * Attempt to attach a command entry point to the command handler using the current command instance
+ * If no current command is registered, this NOPs and returns 0xFF
+ * @param command Command string (0th ordered argument) to trigger on (eg: "help")
+ * @param cb Function to run when the command is triggered
+ * @param args Arguments to pass to the function when the command is triggered. The objected pointed to must remain valid when the command is triggered.
+ * @returns The id of the attached command entry, or 0xFF on failure (eg: command buffer full, command already exists, etc.)
+ */
+uint8_t cmd_cattach(const char* command, void (*cb)(void* args), void* args);
+
+/**
+ * Attempt to detach a command entry point from the command handler using the current command instance
+ * If no current command is registered, this NOPs and returns 0xFF
+ * @param id ID of the command entry to detach
+ * @returns The id of the detached command entry, or 0xFF on failure
+ */
+uint8_t cmd_cdetach(uint8_t id);
+
+/**
+ * Attempt to grab an integer value from the unordered command cache using the current command
+ * If no current command is registered, this NOPs and returns the default value
+ * @param name Name of the argument to grab
+ * @param default_val Value to return if the argument is not found
+ */
+int cmd_cugeti(const char* name, int default_val);
+
+/**
+ * Attempt to grab a float value from the unordered command cache using the current command
+ * If no current command is registered, this NOPs and returns the default value
+ * @param name Name of the argument to grab
+ * @param default_val Value to return if the argument is not found
+ */
+float cmd_cugetf(const char* name, float default_val);
+
+/**
+ * Attempt to grab a boolean value from the unordered command cache using the current command
+ * If no current command is registered, this NOPs and returns the default value
+ * @param name Name of the argument to grab
+ * @param default_val Value to return if the argument is not found
+ */
+bool cmd_cugetb(const char* name, bool default_val);
+
+/**
+ * Attempt to grab a boolean value from the ordered command cache using the current command
+ * If no current command is registered, this NOPs and returns the default value
+ * @param idx Index of the argument to grab (0-indexed)
+ * @param default_val Default string value to copy into buffer if argument is not found
+ */
+const char* cmd_cugets(const char* name, const char* default_val);
+
+/**
+ * Attempt to grab an integer value from the ordered command cache using the current command
+ * If no current command is registered, this NOPs and returns the default value
+ * @param idx Index of the argument to grab (0-indexed)
+ * @param default_val Value to return if the argument is not found
+ */
+int cmd_cogeti(uint8_t idx, int default_val);
+
+/**
+ * Attempt to grab a float value from the ordered command cache using the current command
+ * If no current command is registered, this NOPs and returns the default value
+ * @param idx Index of the argument to grab (0-indexed)
+ * @param default_val Value to return if the argument is not found
+ */
+float cmd_cogetf(uint8_t idx, float default_val);
+
+/**
+ * Attempt to grab a boolean value from the ordered command cache using the current command
+ * If no current command is registered, this NOPs and returns the default value
+ * @param idx Index of the argument to grab (0-indexed)
+ * @param default_val Value to return if the argument is not found
+ */
+bool cmd_cogetb(uint8_t idx, bool default_val);
+
+/**
+ * Attempt to grab a boolean value from the ordered command cache using the current command
+ * If no current command is registered, this NOPs and returns the default value
+ * @param idx Index of the argument to grab (0-indexed)
+ * @param default_val Default string value to copy into buffer if argument is not found
+ */
+const char* cmd_cogets(uint8_t idx, const char* default_val);
 
 #ifdef __cplusplus
 }

@@ -7,6 +7,11 @@ uint8_t _cmd_find_fcache(cmd_t* cmd, uint8_t start); // Search for the next sing
 cmd_cache_t _cmd_read_cache(cmd_t* cmd, uint16_t cache_idx); // Read a cache entry at the given index; Returns the cache entry
 uint8_t _cmd_cache_len(cmd_t* cmd); // Get the length of the command cache (number of entries)
 
+// Keep track of the last referenced `cmd` instance
+// Within+after a registered callback, this will be the `cmd` that triggered the instance
+// Set whenever a `cmd_recv` successfully decodes a command
+cmd_t* _cmd_current_cmd = NULL;
+
 cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, uint8_t buf_size, char initiator) {
     memset(entry_buf, 0, entry_size * sizeof(cmd_entry_t)); // Clear command entry buffer
 
@@ -38,6 +43,10 @@ cmd_t cmd_f(uint8_t entry_size, uint8_t buf_size, char initiator) {
     return cmd(entry_buf, entry_size, buf_buf, buf_size, initiator);
 }
 
+void cmd_curr(cmd_t* cmd) {
+    _cmd_current_cmd = cmd;
+}
+
 bool cmd_recv(cmd_t* cmd, char ch) {
     if (ch == '\r') return false; // Ignore the evil character
 
@@ -53,6 +62,8 @@ bool cmd_recv(cmd_t* cmd, char ch) {
 
         bool char_used = false;
         if (cmd->state == CMD_RECV_COMMAND || cmd->state == CMD_RECV_COMMAND_I) {
+            _cmd_current_cmd = cmd; // Update current command on successful decoding
+
             // Attempt to run associated command
             const char* command_buf = cmd_ogets(cmd, 0, ""); // Ensure cache is updated with all received tokens before running command callback
 
@@ -142,6 +153,9 @@ bool cmd_recv(cmd_t* cmd, char ch) {
 }
 
 uint8_t cmd_attach(cmd_t* cmd, const char* command, void (*cb)(void* args), void* args) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return 0xFF;            // Return failure code
+
     // Search for an empty slot in the command entry buffer
     for (uint8_t i = 0; i < cmd->entries.cap; i++) {
         if (cmd->entries.buf[i].ch == NULL) { // Found empty slot
@@ -158,6 +172,9 @@ uint8_t cmd_attach(cmd_t* cmd, const char* command, void (*cb)(void* args), void
 }
 
 uint8_t cmd_detach(cmd_t* cmd, uint8_t id) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return 0xFF;            // Return failure code
+
     if (id >= cmd->entries.cap) return 0xFF; // Invalid id; Return failure code
 
     cmd->entries.buf[id].ch = NULL; // Mark command entry as empty
@@ -165,6 +182,9 @@ uint8_t cmd_detach(cmd_t* cmd, uint8_t id) {
 }
 
 int cmd_ugeti(cmd_t* cmd, const char* name, int default_val) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return default_val;     // Return failure code
+
     uint8_t cidx = _cmd_find_ucache(cmd, name);
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
@@ -173,6 +193,9 @@ int cmd_ugeti(cmd_t* cmd, const char* name, int default_val) {
 }
 
 float cmd_ugetf(cmd_t* cmd, const char* name, float default_val) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return default_val;     // Return failure code
+
     uint8_t cidx = _cmd_find_ucache(cmd, name);
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
@@ -181,6 +204,9 @@ float cmd_ugetf(cmd_t* cmd, const char* name, float default_val) {
 }
 
 bool cmd_ugetb(cmd_t* cmd, const char* name, bool default_val) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return default_val;     // Return failure code
+
     uint8_t cidx = 0xFF;
     
     // Look for single-character unordered flag
@@ -214,6 +240,9 @@ bool cmd_ugetb(cmd_t* cmd, const char* name, bool default_val) {
 }
 
 const char* cmd_ugets(cmd_t* cmd, const char* name, const char* default_val) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return default_val;     // Return failure code
+    
     uint8_t cidx = _cmd_find_ucache(cmd, name);
     if (cidx == 0xFF) {
         return default_val;
@@ -224,6 +253,9 @@ const char* cmd_ugets(cmd_t* cmd, const char* name, const char* default_val) {
 }
 
 int cmd_ogeti(cmd_t* cmd, uint8_t idx, int default_val) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return default_val;     // Return failure code
+
     uint8_t cidx = _cmd_find_ocache(cmd, idx);
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
@@ -232,6 +264,9 @@ int cmd_ogeti(cmd_t* cmd, uint8_t idx, int default_val) {
 }
 
 float cmd_ogetf(cmd_t* cmd, uint8_t idx, float default_val) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return default_val;     // Return failure code
+    
     uint8_t cidx = _cmd_find_ocache(cmd, idx);
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
@@ -240,6 +275,9 @@ float cmd_ogetf(cmd_t* cmd, uint8_t idx, float default_val) {
 }
 
 bool cmd_ogetb(cmd_t* cmd, uint8_t idx, bool default_val) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return default_val;     // Return failure code
+
     uint8_t cidx = _cmd_find_ocache(cmd, idx);
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
@@ -248,6 +286,9 @@ bool cmd_ogetb(cmd_t* cmd, uint8_t idx, bool default_val) {
 }
 
 const char* cmd_ogets(cmd_t* cmd, uint8_t idx, const char* default_val) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return default_val;     // Return failure code
+
     uint8_t cidx = _cmd_find_ocache(cmd, idx);
     if (cidx == 0xFF) {
         return default_val;
@@ -256,6 +297,20 @@ const char* cmd_ogets(cmd_t* cmd, uint8_t idx, const char* default_val) {
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
     return (const char*) &cmd->buf.buf[cache.value];
 }
+
+// Block of "Current" operations
+// Note that these are just shallow wrappers around the normal commands
+bool cmd_crecv(char ch)                                                         { return cmd_recv(_cmd_current_cmd, ch); }
+uint8_t cmd_cattach(const char* command, void (*cb)(void* args), void* args)    { return cmd_attach(_cmd_current_cmd, command, cb, args); }
+uint8_t cmd_cdetach(uint8_t id)                                                 { return cmd_detach(_cmd_current_cmd, id); }
+int cmd_cugeti(const char* name, int default_val)                   { return cmd_ugeti(NULL, name, default_val); }
+float cmd_cugetf(const char* name, float default_val)               { return cmd_ugetf(NULL, name, default_val); }
+bool cmd_cugetb(const char* name, bool default_val)                 { return cmd_ugetb(NULL, name, default_val); }
+const char* cmd_cugets(const char* name, const char* default_val)   { return cmd_ugets(NULL, name, default_val); }
+int cmd_cogeti(uint8_t idx, int default_val)                    { return cmd_ogeti(NULL, idx, default_val); }
+float cmd_cogetf(uint8_t idx, float default_val)                { return cmd_ogetf(NULL, idx, default_val); }
+bool cmd_cogetb(uint8_t idx, bool default_val)                  { return cmd_ogetb(NULL, idx, default_val); }
+const char* cmd_cogets(uint8_t idx, const char* default_val)    { return cmd_ogets(NULL, idx, default_val); }
 
 
 // PRIVATE FUNCTIONS
