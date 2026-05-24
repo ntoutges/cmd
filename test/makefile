@@ -1,4 +1,4 @@
-src = ../cmd.c
+src = ../cmd.c ../cmd_dbg.c
 flags = -Wall
 
 all:
