@@ -118,10 +118,18 @@ void cmd_curr(cmd_t* cmd);
 /**
  * Trigger on receiving a command character
  * @param cmd   The command handler to trigger on
- * @param ch The received command character
+ * @param ch    The received command character
  * @returns     true if the character was part of a command, false otherwise
  */
 bool cmd_recv(cmd_t* cmd, char ch);
+
+/**
+ * Trigger on receiving a command string
+ * @param cmd   The command handler to trigger on
+ * @param str   The received command string to process
+ * @returns     true if some part of the string was part of a command, false otherwise
+ */
+bool cmd_recvs(cmd_t* cmd, const char* str);
 
 /**
  * Attempt to attach a command entry point to the command handler

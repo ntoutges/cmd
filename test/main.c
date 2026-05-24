@@ -12,14 +12,6 @@
 #include <assert.h>
 #include "../cmd.h"
 
-// Helper to send arbitrary command
-void send_command(cmd_t* instance, const char* command) {
-    for (uint8_t i = 0; command[i]; i++) {
-        cmd_recv(instance, command[i]);
-    }
-    cmd_recv(instance, '\n'); // "Send" command
-}
-
 uint8_t checksum = 0; // Proof that regCB was called
 cmd_t myCmd;
 
@@ -44,7 +36,7 @@ int main() {
     myCmd = cmd_f('!', 10, 64);
 
     // ========== TEST BASIC GETTERS ========
-    send_command(&myCmd, "!test get 1.2 0 --a 10 --b 20 --c 30 -xyz");
+    cmd_recvs(&myCmd, "!test get 1.2 0 --a 10 --b 20 --c 30 -xyz\n");
 
     // Check ordered values
     assert(strcmp(cmd_ogets(&myCmd, 0, ""), "test") == 0);
@@ -83,30 +75,30 @@ int main() {
     uint8_t base = 1;
     uint8_t inc_id = cmd_attach(&myCmd, "inc", regCB, &base);
 
-    send_command(&myCmd, "!inc 2");
+    cmd_recvs(&myCmd, "!inc 2\n");
     assert(checksum == 3); // 1 (base) + 2 = 3
 
-    send_command(&myCmd, "!inc 3");
+    cmd_recvs(&myCmd, "!inc 3\n");
     assert(checksum == 7); // 3 + 1 (base) + 3 = 7
 
-    send_command(&myCmd, "!nop 10");
+    cmd_recvs(&myCmd, "!nop 10\n");
     assert(checksum == 7); // Didn't increment
 
-    send_command(&myCmd, "!inc 4");
+    cmd_recvs(&myCmd, "!inc 4\n");
     assert(checksum == 12); // 7 + 1 (base) + 4 = 12
 
     // ======== ENSURE CALLBACKS CAN BE DETACHED ========
     cmd_detach(&myCmd, inc_id);
     checksum = 0; // Reset checksum
 
-    send_command(&myCmd, "!inc");
+    cmd_recvs(&myCmd, "!inc\n");
     assert(checksum == 0); // Should NOP now
 
     // ======== TEST "CURRENT" COMMANDS
     // Note: Intentionally reuses earlier testcase for easier isolation
 
     cmd_curr(&myCmd);
-    send_command(&myCmd, "!test get 1.2 0 --a 10 --b 20 --c 30 -xyz");
+    cmd_recvs(&myCmd, "!test get 1.2 0 --a 10 --b 20 --c 30 -xyz\n");
 
     // Check ordered values
     assert(strcmp(cmd_cogets(0, ""), "test") == 0);
@@ -140,14 +132,14 @@ int main() {
     assert(cmd_cugetb("z", false) == true); // Present in -xyz block
 
     // ======== FILL RX BUFFER ========
-    send_command(&myCmd, "!a b c d e f g h i j k l m n o p"); // 32 bytes used by RX buf; 32 bytes used by cache
+    cmd_recvs(&myCmd, "!a b c d e f g h i j k l m n o p\n"); // 32 bytes used by RX buf; 32 bytes used by cache
 
     for (char c = 'a'; c <= 'p'; c++) {
         assert(cmd_cogets(c - 'a', "-")[0] == c); // Ensure all bytes properly received+cached
     }
 
     // ======== OVERFILL RX BUFFER ========
-    send_command(&myCmd, "!z y x w v u t s r q p o n m l k0"); // 33 bytes used by RX buf; 32 bytes used by cache
+    cmd_recvs(&myCmd, "!z y x w v u t s r q p o n m l k0\n"); // 33 bytes used by RX buf; 32 bytes used by cache
 
     for (char c = 'z'; c >= 'l'; c--) {
         assert(cmd_cogets('z' - c, "-")[0] == c); // Ensure all non-overflowing bytes properly received+cached

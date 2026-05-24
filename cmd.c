@@ -152,6 +152,24 @@ bool cmd_recv(cmd_t* cmd, char ch) {
     return false;
 }
 
+/**
+ * Trigger on receiving a command string
+ * @param cmd   The command handler to trigger on
+ * @param str   The received command string to process
+ * @returns     true if some part of the string was part of a command, false otherwise
+ */
+bool cmd_recvs(cmd_t* cmd, const char* str) {
+    bool used = false;
+
+    // Run through receiving all characters one-by-one
+    for (uint32_t i = 0; str[i]; i++) {
+        used = cmd_recv(cmd, str[i]) || used;
+    }
+
+    // Return if the string was useful
+    return used;
+}
+
 uint8_t cmd_attach(cmd_t* cmd, const char* command, void (*cb)(void* args), void* args) {
     if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
     if (cmd == NULL) return 0xFF;            // Return failure code
