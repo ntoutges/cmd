@@ -35,13 +35,13 @@ int main() {
     
     // Initialize buffers
     // cmd_entry_t entries[10];
-    // uint8_t buf[100];
+    // uint8_t buf[64];
 
     // ======== TEST STATICALLY ALLOCATED CMD INSTANCE ========
     // myCmd = cmd(entries, sizeof(entries) / sizeof(*entries), buf, sizeof(buf) / sizeof(*buf), '!');
 
     // ======== TEST DYNAMICALLY ALLOCATED CMD INSTANCE ========
-    myCmd = cmd_f(10, 100, '!');
+    myCmd = cmd_f(10, 64, '!');
 
     // ========== TEST BASIC GETTERS ========
     send_command(&myCmd, "!test get 1.2 0 --a 10 --b 20 --c 30 -xyz");
@@ -139,7 +139,22 @@ int main() {
     assert(cmd_cugetb("y", false) == true); // Present in -xyz block
     assert(cmd_cugetb("z", false) == true); // Present in -xyz block
 
-    printf("All test cases passed successfully!\n");
+    // ======== FILL RX BUFFER ========
+    send_command(&myCmd, "!a b c d e f g h i j k l m n o p"); // 32 bytes used by RX buf; 32 bytes used by cache
+
+    for (char c = 'a'; c <= 'p'; c++) {
+        assert(cmd_cogets(c - 'a', "-")[0] == c); // Ensure all bytes properly received+cached
+    }
+
+    // ======== OVERFILL RX BUFFER ========
+    send_command(&myCmd, "!z y x w v u t s r q p o n m l k0"); // 33 bytes used by RX buf; 32 bytes used by cache
+
+    for (char c = 'z'; c >= 'l'; c--) {
+        assert(cmd_cogets('z' - c, "-")[0] == c); // Ensure all non-overflowing bytes properly received+cached
+    }
+    assert(cmd_cogets('z' - 'k', "-")[0] == '-'); // Ensure overflowing byte is ignored
+
+    printf("All main test cases passed successfully!\n");
 
     return 0;
 }

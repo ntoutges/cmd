@@ -4,7 +4,7 @@ bool _cmd_update_cache(cmd_t* cmd); // Attempt to update cache based on newly re
 uint8_t _cmd_find_ucache(cmd_t* cmd, const char* name); // Search for a cache entry with the given name; Returns index of cache entry if found, 0xFF otherwise
 uint8_t _cmd_find_ocache(cmd_t* cmd, uint8_t idx); // Search for a cache entry with the given index; Returns index of cache entry if found, 0xFF otherwise
 uint8_t _cmd_find_fcache(cmd_t* cmd, uint8_t start); // Search for the next single-character flag cache entry starting from the given index; Returns index of cache entry if found, 0xFF otherwise
-cmd_cache_t _cmd_read_cache(cmd_t* cmd, uint16_t cache_idx); // Read a cache entry at the given index; Returns the cache entry
+cmd_cache_t _cmd_read_cache(cmd_t* cmd, uint8_t cache_idx); // Read a cache entry at the given index; Returns the cache entry
 uint8_t _cmd_cache_len(cmd_t* cmd); // Get the length of the command cache (number of entries)
 
 // Keep track of the last referenced `cmd` instance
@@ -12,7 +12,7 @@ uint8_t _cmd_cache_len(cmd_t* cmd); // Get the length of the command cache (numb
 // Set whenever a `cmd_recv` successfully decodes a command
 cmd_t* _cmd_current_cmd = NULL;
 
-cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, uint8_t buf_size, char initiator) {
+cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf_ptr_t buf_size, char initiator) {
     memset(entry_buf, 0, entry_size * sizeof(cmd_entry_t)); // Clear command entry buffer
 
     return (cmd_t) {
@@ -32,7 +32,7 @@ cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, uint8_t 
     };
 }
 
-cmd_t cmd_f(uint8_t entry_size, uint8_t buf_size, char initiator) {
+cmd_t cmd_f(uint8_t entry_size, cmd_bbuf_ptr_t buf_size, char initiator) {
     cmd_entry_t* entry_buf = (cmd_entry_t*) malloc(entry_size * sizeof(cmd_entry_t));
     uint8_t* buf_buf = (uint8_t*) malloc(buf_size * sizeof(uint8_t));
 
@@ -189,7 +189,7 @@ int cmd_ugeti(cmd_t* cmd, const char* name, int default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atoi((char*) &cmd->buf.buf[cache.value]);
+    return atoi((char*) &cmd->buf.buf[cache.name + cache.value]);
 }
 
 float cmd_ugetf(cmd_t* cmd, const char* name, float default_val) {
@@ -200,7 +200,7 @@ float cmd_ugetf(cmd_t* cmd, const char* name, float default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atof((char*) &cmd->buf.buf[cache.value]);
+    return atof((char*) &cmd->buf.buf[cache.name + cache.value]);
 }
 
 bool cmd_ugetb(cmd_t* cmd, const char* name, bool default_val) {
@@ -221,8 +221,9 @@ bool cmd_ugetb(cmd_t* cmd, const char* name, bool default_val) {
 
             // Check if any of the characters in the flag value match the given name character
             uint8_t i = 0;
-            while (cmd->buf.buf[cache.value + i] != 0x00) {
-                if (cmd->buf.buf[cache.value + i] == name[0]) return true; // Found flag character in cache; Return true
+            cmd_bbuf_ptr_t base = cache.name + cache.value;
+            while (cmd->buf.buf[base + i] != 0x00) {
+                if (cmd->buf.buf[base + i] == name[0]) return true; // Found flag character in cache; Return true
                 i++;
             }
 
@@ -236,7 +237,7 @@ bool cmd_ugetb(cmd_t* cmd, const char* name, bool default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atoi((char*) &cmd->buf.buf[cache.value]) != 0;
+    return atoi((char*) &cmd->buf.buf[cache.name + cache.value]) != 0;
 }
 
 const char* cmd_ugets(cmd_t* cmd, const char* name, const char* default_val) {
@@ -249,7 +250,7 @@ const char* cmd_ugets(cmd_t* cmd, const char* name, const char* default_val) {
     }
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return (const char*) &cmd->buf.buf[cache.value];
+    return (const char*) &cmd->buf.buf[cache.name + cache.value];
 }
 
 int cmd_ogeti(cmd_t* cmd, uint8_t idx, int default_val) {
@@ -260,7 +261,7 @@ int cmd_ogeti(cmd_t* cmd, uint8_t idx, int default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atoi((char*) &cmd->buf.buf[cache.value]);
+    return atoi((char*) &cmd->buf.buf[cache.name + cache.value]);
 }
 
 float cmd_ogetf(cmd_t* cmd, uint8_t idx, float default_val) {
@@ -271,7 +272,7 @@ float cmd_ogetf(cmd_t* cmd, uint8_t idx, float default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atof((char*) &cmd->buf.buf[cache.value]);
+    return atof((char*) &cmd->buf.buf[cache.name + cache.value]);
 }
 
 bool cmd_ogetb(cmd_t* cmd, uint8_t idx, bool default_val) {
@@ -282,7 +283,7 @@ bool cmd_ogetb(cmd_t* cmd, uint8_t idx, bool default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atoi((char*) &cmd->buf.buf[cache.value]) != 0;
+    return atoi((char*) &cmd->buf.buf[cache.name + cache.value]) != 0;
 }
 
 const char* cmd_ogets(cmd_t* cmd, uint8_t idx, const char* default_val) {
@@ -295,7 +296,7 @@ const char* cmd_ogets(cmd_t* cmd, uint8_t idx, const char* default_val) {
     }
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return (const char*) &cmd->buf.buf[cache.value];
+    return (const char*) &cmd->buf.buf[cache.name + cache.value];
 }
 
 // Block of "Current" operations
@@ -339,7 +340,7 @@ bool _cmd_update_cache(cmd_t* cmd) {
 
         // Cache new token as unordered value
         cache.name = cmd->last_cache;
-        cache.value = cmd->last_cache;
+        cache.value = 0;
 
         // Copy new cache entry to end of buffer, growing backwards from the end
         memcpy(&cmd->buf.buf[cmd->buf.cch_idx], &cache, sizeof(cmd_cache_t));
@@ -363,7 +364,7 @@ bool _cmd_update_cache(cmd_t* cmd) {
 
         // Cache new token as ordered flag with empty value
         cache.name = cmd->last_cache; // Name pointing to '-' character indicates ordered single-char flag
-        cache.value = cmd->last_cache + 1;
+        cache.value = 1;              // Value is all values after '-' character
 
         // Copy new cache entry to end of buffer, growing backwards from the end
         memcpy(&cmd->buf.buf[cmd->buf.cch_idx], &cache, sizeof(cmd_cache_t));
@@ -375,8 +376,8 @@ bool _cmd_update_cache(cmd_t* cmd) {
     // Looking at multi-character flag, in the format of '--flag value'
     // Note that this requires 2 tokens (--flag, value)
     // Ensure that >= 2 tokens are present; Otherwise: wait for more tokens to arrive
-    uint8_t first_token_idx = cmd->last_cache + 2; // Skip past '--' characters
-    uint8_t second_token_idx = first_token_idx;
+    cmd_bbuf_ptr_t first_token_idx = cmd->last_cache + 2; // Skip past '--' characters
+    cmd_bbuf_ptr_t second_token_idx = first_token_idx;
 
     // Search for the second token by looking for the next null byte before the end of the buffer
     while (++second_token_idx < cmd->buf.chr_len - 1 && cmd->buf.buf[second_token_idx] != 0x00);
@@ -397,7 +398,7 @@ bool _cmd_update_cache(cmd_t* cmd) {
 
     // Cache new token as ordered flag with value
     cache.name = first_token_idx;
-    cache.value = second_token_idx;
+    cache.value = second_token_idx - first_token_idx;
     cmd->buf.chr_len -= 2; // Account for removed "--" characters
 
     // Copy new cache entry to end of buffer, growing backwards from the end
@@ -416,9 +417,8 @@ uint8_t _cmd_find_ucache(cmd_t* cmd, const char* name) {
         cmd_cache_t cache = _cmd_read_cache(cmd, i);
 
         if (
-            cache.name < cmd->buf.cap &&
-            cache.value < cmd->buf.cap &&
-            cache.value != cache.name && // name != value indicates unordered flag; Skip ordered flags
+            cache.name + cache.value < cmd->buf.cap &&
+            cache.value != 0 && // name != value (value offset is not 0) indicates unordered flag; Skip ordered flags
             cmd->buf.buf[cache.name] != '-' && // '-' character in name indicates ordered single-character flag, not an unordered flag; Skip these entries
             memcmp(&cmd->buf.buf[cache.name], name, strlen(name) + 1) == 0
         ) {
@@ -439,9 +439,8 @@ uint8_t _cmd_find_ocache(cmd_t* cmd, uint8_t idx) {
         cmd_cache_t cache = _cmd_read_cache(cmd, i);
 
         if (
-            cache.name < cmd->buf.cap &&
-            cache.value < cmd->buf.cap &&
-            cache.name == cache.value && // name = value indicates ordered flag
+            cache.name + cache.value < cmd->buf.cap &&
+            cache.value == 0 && // name = value (value offset is 0) indicates ordered flag
             found_flags++ == idx
         ) {
             return i;
@@ -457,7 +456,7 @@ uint8_t _cmd_find_fcache(cmd_t* cmd, uint8_t start) {
     uint8_t cache_entries = _cmd_cache_len(cmd);
 
     for (uint16_t i = start; i < cache_entries; i++) {
-        cmd_cache_t cache = _cmd_read_cache(cmd, i);
+        cmd_cache_t cache = _cmd_read_cache(cmd, (uint8_t) i);
 
         if (cache.name < cmd->buf.cap && cmd->buf.buf[cache.name] == '-') {
             return i;
@@ -468,7 +467,7 @@ uint8_t _cmd_find_fcache(cmd_t* cmd, uint8_t start) {
 }
 
 
-cmd_cache_t _cmd_read_cache(cmd_t* cmd, uint16_t cache_idx) {
+cmd_cache_t _cmd_read_cache(cmd_t* cmd, uint8_t cache_idx) {
     // Cache index out of bounds; Return empty cache
     if (cache_idx >= _cmd_cache_len(cmd))
         return (cmd_cache_t) { 0x00, 0x00 };

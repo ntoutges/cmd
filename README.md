@@ -1,8 +1,8 @@
-# cmd
+# cmd.h
 
 Lightweight command parser for embedded systems and serial consoles.
 
-`cmd` is a small single-header/single-source command parser intended primarily for UART-driven embedded projects. It parses commands incrementally, requires no dynamic allocation by default, and is designed to work well in interrupt-driven or byte-at-a-time receive loops.
+`cmd.h` is a small single-header/single-source command parser intended primarily for UART-driven embedded projects. It parses commands incrementally, requires no dynamic allocation by default, and is designed to work well in interrupt-driven or byte-at-a-time receive loops.
 
 Features include:
 
@@ -141,7 +141,7 @@ Quotes may be escaped using `\"`.
 ```c
 #include "cmd.h"
 
-cmd_entry_t entries[8];
+Cmd_entry_t entries[8];
 uint8_t cmd_buffer[128];
 
 cmd_t shell = cmd(
@@ -268,7 +268,7 @@ mode: fast
 
 # The “Current Command” System
 
-`cmd` keeps track of the most recently executed command instance internally.
+`cmd.h` keeps track of the most recently executed command instance internally.
 
 This allows callbacks to use simplified getter functions:
 
@@ -296,7 +296,7 @@ cmd_curr(&shell);
 
 # Memory Model
 
-`cmd` is designed to minimize allocations and copying.
+`cmd.h` is designed to minimize allocations and copying.
 
 The receive buffer stores:
 
@@ -426,7 +426,7 @@ cmd_cugeti(...)
 
 # Typical Embedded Usage
 
-`cmd` was primarily designed for:
+`cmd.h` was primarily designed for:
 
 * UART debug consoles
 * shell interfaces
@@ -443,3 +443,27 @@ Example:
 !save
 !reboot
 ```
+
+---
+
+# Limitations
+
+`cmd.h` was primarily designed for low-memory environments. This means that its memory footprint is intentionally low. Due to this goal, some comprimises have been made.
+
+## cmd_buffer Limits
+
+The command buffer acts as a dual-headed arena allocator, used for both holding the received command _and_ the cache entries used to interpret that command. Its size is stored, by default, as a `uint8_t`, limiting its maximum length to 256 entries.
+
+This limit is in place to allow the cache entry pointers to the received command to be small `uint8_t` bytes, rather than full addressing words.
+
+If more memory is required, set the `cmd_bbuf_ptr_t` macro to some larger type (ex: `uint16_t`). Note that this will increase caching overhead, so projects with a large amount of small flags may suffer from a change like this.
+
+> If you are unable to set this macro in your compiler (ex: using the Arduino IDE) but must have a greater cmd_buffer size, modify `cmd.h:26` directly
+
+## Command Limits
+
+Keyed commands names (`--myKey`) must _not_ be greater than 253 characters in length (not including the `--` characters). Note that the values (`--ignoreMe myValue`) of in a keyed command have no such limitation, and can be as long as they want (provided they fit within the `cmd_buffer` limits)
+
+## Entry Limits
+
+THere may be up to 256 registered command entries (attached callback functions run whenever some specific command is received). Attempting to attach more callbacks will do nothing.

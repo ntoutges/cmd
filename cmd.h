@@ -20,6 +20,12 @@
 extern "C" {
 #endif
 
+// The size of the psuedo-pointer used to reference objects within
+// the internal character RX/command index arena
+#ifndef cmd_bbuf_ptr_t
+#define cmd_bbuf_ptr_t uint8_t
+#endif
+
 /*
     Command Format:
     command: <initiator><command> <args>\n
@@ -44,17 +50,17 @@ typedef struct cmd_entries_t {
 typedef struct cmd_buf_t {
     uint8_t* buf;  // 
 
-    uint8_t cap; // Capacity of the command buffer
+    cmd_bbuf_ptr_t cap; // Capacity of the command buffer
 
-    uint8_t chr_len; // Current character index in the command buffer (grows from 0 to cap-1)
-    uint8_t cch_idx; // Current character index in the command buffer (shrinks from cap-1 to 0)
+    cmd_bbuf_ptr_t chr_len; // Current character index in the command buffer (grows from 0 to cap-1)
+    cmd_bbuf_ptr_t cch_idx; // Current character index in the command buffer (shrinks from cap-1 to 0)
 } cmd_buf_t;
 
 // Hold onto flag/value name
 // If name = value: flag is ordered; Otherwise: flag is unordered
 typedef struct cmd_cache_t {
-    uint8_t name; // Pointer to name of arg; If points to '-' character, indicates single-character ordered flag list
-    uint8_t value; // Pointer to value of arg
+    cmd_bbuf_ptr_t name; // Pointer to name of arg; If points to '-' character, indicates single-character ordered flag list
+    uint8_t value; // Pointer offset from `name` to value of arg
 } cmd_cache_t;
 
 typedef enum cmd_recv_state_t {
@@ -69,7 +75,7 @@ typedef struct cmd_t {
     char initiator; // Character that indicates a command was sent (eg: '!')
 
     cmd_recv_state_t state; // Receive state of the command handler
-    uint8_t last_cache; // Index of the last cached character in the command buffer
+    cmd_bbuf_ptr_t last_cache; // Index of the last cached character in the command buffer
 
     cmd_entries_t entries; // Command entries
     cmd_buf_t buf; // Buffer to hold current command character(s)
@@ -84,7 +90,7 @@ typedef struct cmd_t {
  * @param initiator Character that indicates a command was sent (eg: '!<cmd>')
  * @returns The allocated command handler
  */
-cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, uint8_t buf_size, char initiator);
+cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf_ptr_t buf_size, char initiator);
 
 /**
  * Create a new command handler quickly (fast)
@@ -98,7 +104,7 @@ cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, uint8_t 
  * @param initiator     Character that indicates a command was sent (eg: '!<cmd>')
  * @return The allocated command handler
  */
-cmd_t cmd_f(uint8_t entry_size, uint8_t buf_size, char initiator);
+cmd_t cmd_f(uint8_t entry_size, cmd_bbuf_ptr_t buf_size, char initiator);
 
 /**
  * Mark the given `cmd` instance as the "current" instance
