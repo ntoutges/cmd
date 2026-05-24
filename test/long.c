@@ -26,7 +26,7 @@ int main() {
     uint8_t buf[1024]; // Far larger than the default 8-bits would allow
 
     // ======== TEST STATICALLY ALLOCATED CMD INSTANCE ========
-    cmd_t myCmd = cmd(entries, sizeof(entries) / sizeof(*entries), buf, sizeof(buf) / sizeof(*buf), '!');
+    cmd_t myCmd = cmd('!', entries, sizeof(entries) / sizeof(*entries), buf, sizeof(buf) / sizeof(*buf));
 
     // ========== TEST BASIC GETTERS ========
     send_command(&myCmd,

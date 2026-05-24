@@ -83,14 +83,14 @@ typedef struct cmd_t {
 
 /**
  * Create a new command handler
+ * @param initiator Character that indicates a command was sent (eg: '!<cmd>')
  * @param entry_buf Buffer to hold command entries
  * @param entry_size Size of the command entry buffer
  * @param buf_buf Buffer to hold current command + cache
  * @param buf_size Size of the buf_buf
- * @param initiator Character that indicates a command was sent (eg: '!<cmd>')
  * @returns The allocated command handler
  */
-cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf_ptr_t buf_size, char initiator);
+cmd_t cmd(char initiator, cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf_ptr_t buf_size);
 
 /**
  * Create a new command handler quickly (fast)
@@ -99,12 +99,12 @@ cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf
  * yielding a larger memory footprint (and the possiblity of failure) with the benefit of
  * an easier dev experience
  * If either the entry buf or buf buf cannot be allocated, that buffer is reduced to a size of 0 B
+ * @param initiator     Character that indicates a command was sent (eg: '!<cmd>')
  * @param entry_size    The number of commands to allocate space for
  * @param buf_size      The size of the buf_buf (receive + tag buffer)
- * @param initiator     Character that indicates a command was sent (eg: '!<cmd>')
  * @return The allocated command handler
  */
-cmd_t cmd_f(uint8_t entry_size, cmd_bbuf_ptr_t buf_size, char initiator);
+cmd_t cmd_f(char initiator, uint8_t entry_size, cmd_bbuf_ptr_t buf_size);
 
 /**
  * Mark the given `cmd` instance as the "current" instance

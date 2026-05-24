@@ -38,10 +38,10 @@ int main() {
     // uint8_t buf[64];
 
     // ======== TEST STATICALLY ALLOCATED CMD INSTANCE ========
-    // myCmd = cmd(entries, sizeof(entries) / sizeof(*entries), buf, sizeof(buf) / sizeof(*buf), '!');
+    // myCmd = cmd('!' entries, sizeof(entries) / sizeof(*entries), buf, sizeof(buf) / sizeof(*buf));
 
     // ======== TEST DYNAMICALLY ALLOCATED CMD INSTANCE ========
-    myCmd = cmd_f(10, 64, '!');
+    myCmd = cmd_f('!', 10, 64);
 
     // ========== TEST BASIC GETTERS ========
     send_command(&myCmd, "!test get 1.2 0 --a 10 --b 20 --c 30 -xyz");

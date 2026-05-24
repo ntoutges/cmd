@@ -145,18 +145,18 @@ Cmd_entry_t entries[8];
 uint8_t cmd_buffer[128];
 
 cmd_t shell = cmd(
+    '!',
     entries,
     8,
     cmd_buffer,
-    sizeof(cmd_buffer),
-    '!'
+    sizeof(cmd_buffer)
 );
 ```
 
 ### Dynamic Allocation
 
 ```c
-cmd_t shell = cmd_f(8, 128, '!');
+cmd_t shell = cmd_f('!' 8, 128);
 ```
 
 ---
@@ -228,11 +228,11 @@ void setup() {
     Serial.begin(115200);
 
     shell = cmd(
+        '!',
         entries,
         8,
         cmd_buffer,
-        sizeof(cmd_buffer),
-        '!'
+        sizeof(cmd_buffer)
     );
 
     cmd_attach(&shell, "led", cmd_led, NULL);

@@ -12,7 +12,7 @@ uint8_t _cmd_cache_len(cmd_t* cmd); // Get the length of the command cache (numb
 // Set whenever a `cmd_recv` successfully decodes a command
 cmd_t* _cmd_current_cmd = NULL;
 
-cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf_ptr_t buf_size, char initiator) {
+cmd_t cmd(char initiator, cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf_ptr_t buf_size) {
     memset(entry_buf, 0, entry_size * sizeof(cmd_entry_t)); // Clear command entry buffer
 
     return (cmd_t) {
@@ -32,7 +32,7 @@ cmd_t cmd(cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf
     };
 }
 
-cmd_t cmd_f(uint8_t entry_size, cmd_bbuf_ptr_t buf_size, char initiator) {
+cmd_t cmd_f(char initiator, uint8_t entry_size, cmd_bbuf_ptr_t buf_size) {
     cmd_entry_t* entry_buf = (cmd_entry_t*) malloc(entry_size * sizeof(cmd_entry_t));
     uint8_t* buf_buf = (uint8_t*) malloc(buf_size * sizeof(uint8_t));
 
@@ -40,7 +40,7 @@ cmd_t cmd_f(uint8_t entry_size, cmd_bbuf_ptr_t buf_size, char initiator) {
     if (buf_buf == NULL) buf_size = 0; // Failed to allocate main buf
 
     // Create `cmd` using the allocated buffers
-    return cmd(entry_buf, entry_size, buf_buf, buf_size, initiator);
+    return cmd(initiator, entry_buf, entry_size, buf_buf, buf_size);
 }
 
 void cmd_curr(cmd_t* cmd) {
