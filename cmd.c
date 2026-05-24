@@ -12,7 +12,14 @@ uint8_t _cmd_cache_len(cmd_t* cmd); // Get the length of the command cache (numb
 // Set whenever a `cmd_recv` successfully decodes a command
 cmd_t* _cmd_current_cmd = NULL;
 
-cmd_t cmd(char initiator, cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf_ptr_t buf_size) {
+cmd_t cmd(
+    char initiator,
+    cmd_entry_t* entry_buf,
+    uint8_t entry_size,
+    uint8_t* buf_buf,
+    cmd_bbuf_ptr_t buf_size,
+    void (*send)(char arg)
+) {
     memset(entry_buf, 0, entry_size * sizeof(cmd_entry_t)); // Clear command entry buffer
 
     return (cmd_t) {
@@ -28,11 +35,17 @@ cmd_t cmd(char initiator, cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* b
             .cap = buf_size,
             .chr_len = 0,
             .cch_idx = buf_size - sizeof(cmd_cache_t)
-        }
+        },
+        .send = send
     };
 }
 
-cmd_t cmd_f(char initiator, uint8_t entry_size, cmd_bbuf_ptr_t buf_size) {
+cmd_t cmd_f(
+    char initiator,
+    uint8_t entry_size,
+    cmd_bbuf_ptr_t buf_size,
+    void (*send)(char arg)
+) {
     cmd_entry_t* entry_buf = (cmd_entry_t*) malloc(entry_size * sizeof(cmd_entry_t));
     uint8_t* buf_buf = (uint8_t*) malloc(buf_size * sizeof(uint8_t));
 
@@ -40,7 +53,7 @@ cmd_t cmd_f(char initiator, uint8_t entry_size, cmd_bbuf_ptr_t buf_size) {
     if (buf_buf == NULL) buf_size = 0; // Failed to allocate main buf
 
     // Create `cmd` using the allocated buffers
-    return cmd(initiator, entry_buf, entry_size, buf_buf, buf_size);
+    return cmd(initiator, entry_buf, entry_size, buf_buf, buf_size, send);
 }
 
 void cmd_curr(cmd_t* cmd) {
@@ -48,6 +61,9 @@ void cmd_curr(cmd_t* cmd) {
 }
 
 bool cmd_recv(cmd_t* cmd, char ch) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return false;           // Vacuously unused
+
     if (ch == '\r') return false; // Ignore the evil character
 
     if (ch == '\n') {
@@ -159,6 +175,9 @@ bool cmd_recv(cmd_t* cmd, char ch) {
  * @returns     true if some part of the string was part of a command, false otherwise
  */
 bool cmd_recvs(cmd_t* cmd, const char* str) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return false;           // Vacuously unused
+
     bool used = false;
 
     // Run through receiving all characters one-by-one
@@ -168,6 +187,32 @@ bool cmd_recvs(cmd_t* cmd, const char* str) {
 
     // Return if the string was useful
     return used;
+}
+
+bool cmd_send(cmd_t* cmd, char ch) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return false;           // Return failure code
+    if (cmd->send == 0x00) return false;     // Read-only; Fail!
+
+    if (ch == 0x00) ch = cmd->initiator; // Fill in initiator character
+
+    // Send character
+    cmd->send(ch);
+
+    return true;
+}
+
+bool cmd_sends(cmd_t* cmd, const char* str) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return false;           // Return failure code
+    if (cmd->send == 0x00) return false;     // Read-only; Fail!
+
+    // Send full string
+    for (uint32_t i = 0; str[i]; i++) {
+        cmd->send(str[i]);
+    }
+
+    return true;
 }
 
 uint8_t cmd_attach(cmd_t* cmd, const char* command, void (*cb)(void* args), void* args) {
@@ -320,6 +365,9 @@ const char* cmd_ogets(cmd_t* cmd, uint8_t idx, const char* default_val) {
 // Block of "Current" operations
 // Note that these are just shallow wrappers around the normal commands
 bool cmd_crecv(char ch)                                                         { return cmd_recv(_cmd_current_cmd, ch); }
+bool cmd_crecvs(const char* str)                                                { return cmd_recvs(_cmd_current_cmd, str); }
+bool cmd_csend(char ch)                                                         { return cmd_send(_cmd_current_cmd, ch); }
+bool cmd_csends(const char* str)                                                { return cmd_sends(_cmd_current_cmd, str); }
 uint8_t cmd_cattach(const char* command, void (*cb)(void* args), void* args)    { return cmd_attach(_cmd_current_cmd, command, cb, args); }
 uint8_t cmd_cdetach(uint8_t id)                                                 { return cmd_detach(_cmd_current_cmd, id); }
 int cmd_cugeti(const char* name, int default_val)                   { return cmd_ugeti(NULL, name, default_val); }

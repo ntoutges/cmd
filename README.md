@@ -149,14 +149,15 @@ cmd_t shell = cmd(
     entries,
     8,
     cmd_buffer,
-    sizeof(cmd_buffer)
+    sizeof(cmd_buffer),
+    NULL
 );
 ```
 
 ### Dynamic Allocation
 
 ```c
-cmd_t shell = cmd_f('!' 8, 128);
+cmd_t shell = cmd_f('!' 8, 128, NULL);
 ```
 
 ---
@@ -192,77 +193,157 @@ Commands execute automatically when a newline (`\n`) is received.
 
 ---
 
-# Full Example
+# 4. Sending Commands
+
+`cmd.h` can also transmit commands using a user-provided send callback.
+
+This is useful for:
+
+* Sending commands to another MCU
+* Bridging commands across UART
+* Creating command relays
+* Building interactive command shells
+* Testing command handlers programmatically
+
+To enable transmission, provide a send callback when creating the command instance:
+
+```c
+void uart_send(char ch) {
+    Serial.write(ch);
+}
+
+cmd_t shell = cmd(
+    '!',
+    entries,
+    8,
+    cmd_buffer,
+    sizeof(cmd_buffer),
+    uart_send
+);
+```
+
+If `send` is set to `NULL`, the instance becomes **read-only** and transmit helpers will return `false`.
+
+---
+
+## Sending Individual Characters
+
+Use `cmd_send()` to send a single character.
+
+```c
+cmd_send(&shell, 'p');
+cmd_send(&shell, 'i');
+cmd_send(&shell, 'n');
+cmd_send(&shell, 'g');
+cmd_send(&shell, '\n');
+```
+
+Passing `0x00` automatically sends the command initiator.
+
+```c
+cmd_send(&shell, 0x00);   // Sends '!'
+cmd_send(&shell, 'p');
+cmd_send(&shell, 'i');
+cmd_send(&shell, 'n');
+cmd_send(&shell, 'g');
+cmd_send(&shell, '\n');
+```
+
+Equivalent output:
+
+```txt
+!ping
+```
+
+This is useful when constructing commands incrementally.
+
+---
+
+## Sending Full Strings
+
+Use `cmd_sends()` to send an entire string.
+
+```c
+cmd_send(&shell, 0x00);
+cmd_sends(&shell, "ping\n");
+```
+
+Or:
+
+```c
+cmd_send(&shell, 0x00);
+cmd_sends(&shell, "led --brightness 128 -i fast\n");
+```
+
+Transmitted data:
+
+```txt
+!led --brightness 128 -i fast
+```
+
+**Important:** `cmd_sends()` does **not** automatically append `\n`.
+
+If you want to execute the command immediately, include the newline yourself:
+
+```c
+cmd_send(&shell, 0x00);
+cmd_sends(&shell, "ping\n");
+```
+
+---
+
+## Arduino Example: Forwarding Commands
+
+This makes it easy to bridge one serial interface to another.
 
 ```c
 #include <Arduino.h>
 #include "cmd.h"
+
+void send_to_serial1(char ch) {
+    Serial1.write(ch);
+}
 
 cmd_entry_t entries[8];
 uint8_t cmd_buffer[128];
 
 cmd_t shell;
 
-void cmd_led(void* args) {
-    int brightness = cmd_cugeti("brightness", 255);
-
-    bool invert = cmd_cugetb("i", false);
-
-    const char* mode = cmd_cogets(1, "normal");
-
-    Serial.print("brightness: ");
-    Serial.println(brightness);
-
-    Serial.print("invert: ");
-    Serial.println(invert ? "yes" : "no");
-
-    Serial.print("mode: ");
-    Serial.println(mode);
-}
-
-void cmd_ping(void* args) {
-    Serial.println("pong");
-}
-
 void setup() {
+
     Serial.begin(115200);
+    Serial1.begin(115200);
 
     shell = cmd(
         '!',
         entries,
         8,
         cmd_buffer,
-        sizeof(cmd_buffer)
+        sizeof(cmd_buffer),
+        send_to_serial1
     );
-
-    cmd_attach(&shell, "led", cmd_led, NULL);
-    cmd_attach(&shell, "ping", cmd_ping, NULL);
-
-    Serial.println("Ready");
 }
 
 void loop() {
-    while (Serial.available()) {
-        cmd_recv(&shell, Serial.read());
+
+    if (Serial.available()) {
+        cmd_send(&shell, Serial.read());
     }
 }
 ```
 
-Example commands:
+This allows commands received on `Serial` to be forwarded directly to `Serial1`.
 
-```txt
-!ping
-!led --brightness 128 -i fast
-```
+---
 
-Example output:
+## Return Values
 
-```txt
-pong
-brightness: 128
-invert: yes
-mode: fast
-```
+Both transmission helpers return `true` on success.
+
+They return `false` if:
+
+* `cmd` is `NULL` and no current command exists
+* the command instance is read-only (`send == NULL`)
 
 ---
 
@@ -374,7 +455,15 @@ cmd_t cmd_f(...);
 
 ```c
 bool cmd_recv(cmd_t* cmd, char ch);
+bool cmd_recvs(cmd_t* cmd, const char* str);
 void cmd_curr(cmd_t* cmd);
+```
+
+## Transmission
+
+```c
+bool cmd_send(cmd_t* cmd, char ch);
+bool cmd_sends(cmd_t* cmd, const char* str);
 ```
 
 ## Command Registration
@@ -408,6 +497,81 @@ cmd_ugets(...)
 cmd_cogeti(...)
 cmd_cugeti(...)
 ...
+```
+
+---
+
+# Full Example
+
+```c
+#include <Arduino.h>
+#include "cmd.h"
+
+cmd_entry_t entries[8];
+uint8_t cmd_buffer[128];
+
+cmd_t shell;
+
+void cmd_led(void* args) {
+    int brightness = cmd_cugeti("brightness", 255);
+
+    bool invert = cmd_cugetb("i", false);
+
+    const char* mode = cmd_cogets(1, "normal");
+
+    Serial.print("brightness: ");
+    Serial.println(brightness);
+
+    Serial.print("invert: ");
+    Serial.println(invert ? "yes" : "no");
+
+    Serial.print("mode: ");
+    Serial.println(mode);
+}
+
+void cmd_ping(void* args) {
+    Serial.println("pong");
+}
+
+void setup() {
+    Serial.begin(115200);
+
+    shell = cmd(
+        '!',
+        entries,
+        8,
+        cmd_buffer,
+        sizeof(cmd_buffer),
+        NULL
+    );
+
+    cmd_attach(&shell, "led", cmd_led, NULL);
+    cmd_attach(&shell, "ping", cmd_ping, NULL);
+
+    Serial.println("Ready");
+}
+
+void loop() {
+    while (Serial.available()) {
+        cmd_recv(&shell, Serial.read());
+    }
+}
+```
+
+Example commands:
+
+```txt
+!ping
+!led --brightness 128 -i fast
+```
+
+Example output:
+
+```txt
+pong
+brightness: 128
+invert: yes
+mode: fast
 ```
 
 ---

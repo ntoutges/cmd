@@ -1,7 +1,7 @@
 /**
  * @file main.c
  * @author Nicholas T. (ntoutges@gmail.com)
- * @brief   Test the `cmd` library and ensure that all features are working as intended
+ * @brief Test the `cmd` library and ensure that all features are working as intended
  * @version 1.0
  * @date 2026-05-21
  * 
@@ -30,10 +30,10 @@ int main() {
     // uint8_t buf[64];
 
     // ======== TEST STATICALLY ALLOCATED CMD INSTANCE ========
-    // myCmd = cmd('!' entries, sizeof(entries) / sizeof(*entries), buf, sizeof(buf) / sizeof(*buf));
+    // myCmd = cmd('!' entries, sizeof(entries) / sizeof(*entries), buf, sizeof(buf) / sizeof(*buf), NULL);
 
     // ======== TEST DYNAMICALLY ALLOCATED CMD INSTANCE ========
-    myCmd = cmd_f('!', 10, 64);
+    myCmd = cmd_f('!', 10, 64, NULL);
 
     // ========== TEST BASIC GETTERS ========
     cmd_recvs(&myCmd, "!test get 1.2 0 --a 10 --b 20 --c 30 -xyz\n");

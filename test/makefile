@@ -8,6 +8,8 @@ all:
 	gcc -o b.exe long.c $(src) $(flags) -D'cmd_bbuf_ptr_t=uint16_t'
 	./b.exe
 
+	gcc -o c.exe tx.c $(src) $(flags)
+	./c.exe
 
 test:
 	gcc -o a.exe main.c $(src) $(flags)
@@ -17,4 +19,6 @@ long:
 	gcc -o b.exe long.c $(src) $(flags) -D'cmd_bbuf_ptr_t=uint16_t'
 	./b.exe
 
-
+tx:
+	gcc -o c.exe tx.c $(src) $(flags)
+	./c.exe

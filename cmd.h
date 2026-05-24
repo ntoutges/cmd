@@ -79,18 +79,29 @@ typedef struct cmd_t {
 
     cmd_entries_t entries; // Command entries
     cmd_buf_t buf; // Buffer to hold current command character(s)
+
+    void (*send)(char arg); // Transmit data to the other end of the `cmd` connection
 } cmd_t;
 
 /**
  * Create a new command handler
- * @param initiator Character that indicates a command was sent (eg: '!<cmd>')
- * @param entry_buf Buffer to hold command entries
- * @param entry_size Size of the command entry buffer
- * @param buf_buf Buffer to hold current command + cache
- * @param buf_size Size of the buf_buf
+ * @param initiator     Character that indicates a command was sent (eg: '!<cmd>')
+ * @param entry_buf     Buffer to hold command entries
+ * @param entry_size    Size of the command entry buffer
+ * @param buf_buf       Buffer to hold current command + cache
+ * @param buf_size      Size of the buf_buf
+ * @param send          A callback used to transmit some character
+ * Set to `NULL` to make this a READ-ONLY `cmd` instance
  * @returns The allocated command handler
  */
-cmd_t cmd(char initiator, cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* buf_buf, cmd_bbuf_ptr_t buf_size);
+cmd_t cmd(
+    char initiator,
+    cmd_entry_t* entry_buf,
+    uint8_t entry_size,
+    uint8_t* buf_buf,
+    cmd_bbuf_ptr_t buf_size,
+    void (*send)(char arg)
+);
 
 /**
  * Create a new command handler quickly (fast)
@@ -102,9 +113,16 @@ cmd_t cmd(char initiator, cmd_entry_t* entry_buf, uint8_t entry_size, uint8_t* b
  * @param initiator     Character that indicates a command was sent (eg: '!<cmd>')
  * @param entry_size    The number of commands to allocate space for
  * @param buf_size      The size of the buf_buf (receive + tag buffer)
+ * @param send          A callback used to transmit some character
+ * Set to `NULL` to make this a READ-ONLY `cmd` instance
  * @return The allocated command handler
  */
-cmd_t cmd_f(char initiator, uint8_t entry_size, cmd_bbuf_ptr_t buf_size);
+cmd_t cmd_f(
+    char initiator,
+    uint8_t entry_size,
+    cmd_bbuf_ptr_t buf_size,
+    void (*send)(char arg)
+);
 
 /**
  * Mark the given `cmd` instance as the "current" instance
@@ -117,7 +135,7 @@ void cmd_curr(cmd_t* cmd);
 
 /**
  * Trigger on receiving a command character
- * @param cmd   The command handler to trigger on
+ * @param cmd   The command handler to trigger on; Pass in NULL to use the "current" command handler. If none exist, NOPs and returns false
  * @param ch    The received command character
  * @returns     true if the character was part of a command, false otherwise
  */
@@ -125,11 +143,27 @@ bool cmd_recv(cmd_t* cmd, char ch);
 
 /**
  * Trigger on receiving a command string
- * @param cmd   The command handler to trigger on
+ * @param cmd   The command handler to trigger on; Pass in NULL to use the "current" command handler. If none exist, NOPs and returns false
  * @param str   The received command string to process
  * @returns     true if some part of the string was part of a command, false otherwise
  */
 bool cmd_recvs(cmd_t* cmd, const char* str);
+
+/**
+ * Send a single character across the `cmd` bridge
+ * @param cmd   The command handler to trigger. Pass in NULL to use the "current" command handler. If none exist, NOPs and returns false
+ * @param ch    The character to send. If 0x00, sends the initiator character (signaling the start of a transmission)
+ * @returns     true if the character was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_send(cmd_t* cmd, char ch);
+
+/**
+ * Send a full string across the `cmd` bridge
+ * @param cmd   The command handler to trigger. Pass in NULL to use the "current" command handler. If none exist, NOPs and returns false
+ * @param str   The null-terminated string to send. Note that this function does _not_ automatically add a `\n` character
+ * @returns     true if the string was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_sends(cmd_t* cmd, const char* str);
 
 /**
  * Attempt to attach a command entry point to the command handler
@@ -223,6 +257,29 @@ const char* cmd_ogets(cmd_t* cmd, uint8_t idx, const char* default_val);
  * @returns     true if the character was part of a command, false otherwise
  */
 bool cmd_crecv(char ch);
+
+/**
+ * Trigger on receiving a command string using the current command instance
+ * @param str   The received command string to process
+ * @returns     true if some part of the string was part of a command, false otherwise
+ */
+bool cmd_crecvs(const char* str);
+
+/**
+ * Send a single character across the `cmd` bridge using the current command instance
+ * If no current command is registered, this NOPs and returns `false`
+ * @param ch    The character to send. If 0x00, sends the initiator character (signaling the start of a transmission)
+ * @returns     true if the character was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_csend(char ch);
+
+/**
+ * Send a full string across the `cmd` bridge using the current command instance
+ * If no current command is registered, this NOPs and returns `false`
+ * @param str   The null-terminated string to send. Note that this function does _not_ automatically add a `\n` character
+ * @returns     true if the string was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_csends(const char* str);
 
 /**
  * Attempt to attach a command entry point to the command handler using the current command instance
