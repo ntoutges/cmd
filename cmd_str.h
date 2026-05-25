@@ -52,6 +52,27 @@ char* cmd_str_ftoma(double val, char* buf, int size);
  */
 char* cmd_str_itoa(int32_t val, char* buf, int size);
 
+/**
+ * ASCII to Float
+ * Convert some floating point decimal expansion into a float
+ * Handles all `cmd_str_ftoma` output
+ * 
+ * @param buf   The buffer to read
+ * @return      The parsed float
+ */
+double cmd_str_atof(char* buf);
+
+/**
+ * ASCII to Int
+ * Convert some integer decimal expansion into an int
+ *
+ * Handles all `cmd_str_itoa` output
+ * 
+ * @param buf   The buffer to read
+ * @return      The parsed int
+ */
+int32_t cmd_str_atoi(char* buf);
+
 #ifdef __cplusplus
 }
 #endif

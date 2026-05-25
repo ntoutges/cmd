@@ -3,19 +3,20 @@ flags = -Wall
 
 all:
 	gcc -o a.exe main.c $(src) $(flags)
-	./a.exe
-
 	gcc -o b.exe long.c $(src) $(flags) -D'cmd_bbuf_ptr_t=uint16_t'
-	./b.exe
-
 	gcc -o c.exe tx.c $(src) $(flags)
-	./c.exe
-
 	gcc -o d.exe ftoa.c $(src) $(flags)
-	./d.exe
-
 	gcc -o e.exe itoa.c $(src) $(flags)
+	gcc -o f.exe atof.c $(src) $(flags)
+	gcc -o g.exe atoi.c $(src) $(flags)
+
+	./a.exe
+	./b.exe
+	./c.exe
+	./d.exe
 	./e.exe
+	./f.exe
+	./g.exe
 
 test:
 	gcc -o a.exe main.c $(src) $(flags)
@@ -36,3 +37,11 @@ ftoa:
 itoa:
 	gcc -o e.exe itoa.c $(src) $(flags)
 	./e.exe
+
+atof:
+	gcc -o f.exe atof.c $(src) $(flags)
+	./f.exe
+
+atoi:
+	gcc -o g.exe atoi.c $(src) $(flags)
+	./g.exe

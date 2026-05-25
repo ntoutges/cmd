@@ -104,6 +104,47 @@ char* cmd_str_itoa(int32_t val, char* buf, int size) {
     return buf;
 }
 
+double cmd_str_atof(char* buf) {
+    if (buf == NULL) return 0; // Invalid buffer; Parse as 0
+
+    bool neg = false;
+    float val = 0;
+
+    // Account for negative numbers
+    if (buf[0] == '-') {
+        neg = true;
+        buf = &(buf[1]);
+    }
+
+    // Check for Inf
+    if (buf[0] == 'I') {
+        if (strcmp(buf, "I") == 0 || strcmp(buf, "Inf") == 0 || strcmp(buf, "Infinity") == 0)
+            val = INFINITY;
+        else val = 0; // Invalid number
+    }
+
+    // Check for NaN
+    else if (buf[0] == 'N') {
+        if (strcmp(buf, "N") == 0 || strcmp(buf, "NaN") == 0)
+            val = NAN;
+        else val = 0; // Invalid number
+    }
+
+    // Parse using atof
+    else {
+        val = atof(buf);
+    }
+
+    return neg ? -val : val;
+}
+
+int32_t cmd_str_atoi(char* buf) {
+    if (buf == NULL) return 0; // Invalid buffer; Parse as 0
+
+    // No special cases to handle
+    return atoi(buf);
+}
+
 // ======== PRIVATE FUNCTIONS ========
 
 char* _cmd_str_ftoma_inf(char* buf, int size) {
