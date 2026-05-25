@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include "cmd_str.h"
 
 #ifdef __cplusplus
 extern "C" {

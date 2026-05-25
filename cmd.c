@@ -215,6 +215,36 @@ bool cmd_sends(cmd_t* cmd, const char* str) {
     return true;
 }
 
+bool cmd_sendi(cmd_t* cmd, int32_t i) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return false;           // Return failure code
+    if (cmd->send == 0x00) return false;     // Read-only; Fail!
+
+    // Convert to string
+    char buf[12]; // Maximum size required by int
+    cmd_str_itoa(i, buf, sizeof(buf));
+
+    // Send converted string
+    cmd_sends(cmd, buf);
+
+    return true;
+}
+
+bool cmd_sendf(cmd_t* cmd, float f) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return false;           // Return failure code
+    if (cmd->send == 0x00) return false;     // Read-only; Fail!
+
+    // Convert to string
+    char buf[16]; // Comfortable number of digits
+    cmd_str_ftoma(f, buf, sizeof(buf));
+
+    // Send converted string
+    cmd_sends(cmd, buf);
+
+    return true;
+}
+
 uint8_t cmd_attach(cmd_t* cmd, const char* command, void (*cb)(void* args), void* args) {
     if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
     if (cmd == NULL) return 0xFF;            // Return failure code
@@ -252,7 +282,7 @@ int cmd_ugeti(cmd_t* cmd, const char* name, int default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atoi((char*) &cmd->buf.buf[cache.name + cache.value]);
+    return cmd_str_atoi((char*) &cmd->buf.buf[cache.name + cache.value]);
 }
 
 float cmd_ugetf(cmd_t* cmd, const char* name, float default_val) {
@@ -263,7 +293,7 @@ float cmd_ugetf(cmd_t* cmd, const char* name, float default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atof((char*) &cmd->buf.buf[cache.name + cache.value]);
+    return cmd_str_atof((char*) &cmd->buf.buf[cache.name + cache.value]);
 }
 
 bool cmd_ugetb(cmd_t* cmd, const char* name, bool default_val) {
@@ -300,7 +330,7 @@ bool cmd_ugetb(cmd_t* cmd, const char* name, bool default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atoi((char*) &cmd->buf.buf[cache.name + cache.value]) != 0;
+    return cmd_str_atoi((char*) &cmd->buf.buf[cache.name + cache.value]) != 0;
 }
 
 const char* cmd_ugets(cmd_t* cmd, const char* name, const char* default_val) {
@@ -324,7 +354,7 @@ int cmd_ogeti(cmd_t* cmd, uint8_t idx, int default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atoi((char*) &cmd->buf.buf[cache.name + cache.value]);
+    return cmd_str_atoi((char*) &cmd->buf.buf[cache.name + cache.value]);
 }
 
 float cmd_ogetf(cmd_t* cmd, uint8_t idx, float default_val) {
@@ -335,7 +365,7 @@ float cmd_ogetf(cmd_t* cmd, uint8_t idx, float default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atof((char*) &cmd->buf.buf[cache.name + cache.value]);
+    return cmd_str_atof((char*) &cmd->buf.buf[cache.name + cache.value]);
 }
 
 bool cmd_ogetb(cmd_t* cmd, uint8_t idx, bool default_val) {
@@ -346,7 +376,7 @@ bool cmd_ogetb(cmd_t* cmd, uint8_t idx, bool default_val) {
     if (cidx == 0xFF) return default_val; // Cache entry not found; Return default value
 
     cmd_cache_t cache = _cmd_read_cache(cmd, cidx);
-    return atoi((char*) &cmd->buf.buf[cache.name + cache.value]) != 0;
+    return cmd_str_atoi((char*) &cmd->buf.buf[cache.name + cache.value]) != 0;
 }
 
 const char* cmd_ogets(cmd_t* cmd, uint8_t idx, const char* default_val) {
@@ -368,6 +398,8 @@ bool cmd_crecv(char ch)                                                         
 bool cmd_crecvs(const char* str)                                                { return cmd_recvs(_cmd_current_cmd, str); }
 bool cmd_csend(char ch)                                                         { return cmd_send(_cmd_current_cmd, ch); }
 bool cmd_csends(const char* str)                                                { return cmd_sends(_cmd_current_cmd, str); }
+bool cmd_csendi(cmd_t* cmd, int32_t i)                                          { return cmd_sendi(_cmd_current_cmd, i); }
+bool cmd_csendf(cmd_t* cmd, float f)                                            { return cmd_sendf(_cmd_current_cmd, f); }
 uint8_t cmd_cattach(const char* command, void (*cb)(void* args), void* args)    { return cmd_attach(_cmd_current_cmd, command, cb, args); }
 uint8_t cmd_cdetach(uint8_t id)                                                 { return cmd_detach(_cmd_current_cmd, id); }
 int cmd_cugeti(const char* name, int default_val)                   { return cmd_ugeti(NULL, name, default_val); }
