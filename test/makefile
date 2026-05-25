@@ -1,4 +1,4 @@
-src = ../cmd.c ../cmd_dbg.c
+src = ../cmd.c ../cmd_dbg.c ../cmd_str.c
 flags = -Wall
 
 all:
@@ -11,6 +11,12 @@ all:
 	gcc -o c.exe tx.c $(src) $(flags)
 	./c.exe
 
+	gcc -o d.exe ftoa.c $(src) $(flags)
+	./d.exe
+
+	gcc -o e.exe itoa.c $(src) $(flags)
+	./e.exe
+
 test:
 	gcc -o a.exe main.c $(src) $(flags)
 	./a.exe
@@ -22,3 +28,11 @@ long:
 tx:
 	gcc -o c.exe tx.c $(src) $(flags)
 	./c.exe
+
+ftoa:
+	gcc -o d.exe ftoa.c $(src) $(flags)
+	./d.exe
+
+itoa:
+	gcc -o e.exe itoa.c $(src) $(flags)
+	./e.exe

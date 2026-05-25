@@ -166,6 +166,22 @@ bool cmd_send(cmd_t* cmd, char ch);
 bool cmd_sends(cmd_t* cmd, const char* str);
 
 /**
+ * Send a full integer across the `cmd` bridge
+ * @param cmd   The command handler to trigger. Pass in NULL to use the "current" command handler. If none exist, NOPs and returns false
+ * @param i     The integer to send. Note that this function does _not_ automatically add a `\n` character
+ * @returns     true if the int was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_sendi(cmd_t* cmd, int32_t i);
+
+/**
+ * Send a full float across the `cmd` bridge
+ * @param cmd   The command handler to trigger. Pass in NULL to use the "current" command handler. If none exist, NOPs and returns false
+ * @param f     The integer to send. Note that this function does _not_ automatically add a `\n` character
+ * @returns     true if the float was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_sendf(cmd_t* cmd, float f);
+
+/**
  * Attempt to attach a command entry point to the command handler
  * @param cmd Command handler to attach to; Pass in NULL to use the "current" command handler. If none exist, NOPs and returns 0xFF
  * @param command Command string (0th ordered argument) to trigger on (eg: "help")
@@ -280,6 +296,22 @@ bool cmd_csend(char ch);
  * @returns     true if the string was sent (command handler exists and is not read-only), false otherwise
  */
 bool cmd_csends(const char* str);
+
+/**
+ * Send a full integer across the `cmd` bridge using the current command instance
+ * If no current command is registered, this NOPs and returns `false`
+ * @param i     The integer to send. Note that this function does _not_ automatically add a `\n` character
+ * @returns     true if the int was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_csendi(cmd_t* cmd, int32_t i);
+
+/**
+ * Send a full float across the `cmd` bridge using the current command instance
+ * If no current command is registered, this NOPs and returns `false`
+ * @param f     The integer to send. Note that this function does _not_ automatically add a `\n` character
+ * @returns     true if the float was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_csendf(cmd_t* cmd, float f);
 
 /**
  * Attempt to attach a command entry point to the command handler using the current command instance
