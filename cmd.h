@@ -68,7 +68,9 @@ typedef enum cmd_recv_state_t {
     CMD_RECV_OPEN,      // Able to receive command characters
     CMD_RECV_CLOSED,    // Initator not found; Wait for next newline to reset
     CMD_RECV_COMMAND,   // Initator found; Receiving command characters
-    CMD_RECV_COMMAND_I, // Inhibit new flag/value pairs: Receiving a single token
+    CMD_RECV_COMMAND_E, // Waiting for character involved in escape sequence
+    CMD_RECV_COMMAND_I,  // Inhibit new flag/value pairs: Receiving a single token
+    CMD_RECV_COMMAND_IE, // Escape character within inhibited sequence
     CMD_RECV_FULL       // Receive buffer full
 } cmd_recv_state_t;
 

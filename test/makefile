@@ -9,6 +9,7 @@ all:
 	gcc -o e.exe itoa.c $(src) $(flags)
 	gcc -o f.exe atof.c $(src) $(flags)
 	gcc -o g.exe atoi.c $(src) $(flags)
+	gcc -o h.exe esc.c $(src) $(flags)
 
 	./a.exe
 	./b.exe
@@ -17,6 +18,7 @@ all:
 	./e.exe
 	./f.exe
 	./g.exe
+	./h.exe
 
 test:
 	gcc -o a.exe main.c $(src) $(flags)
@@ -45,3 +47,7 @@ atof:
 atoi:
 	gcc -o g.exe atoi.c $(src) $(flags)
 	./g.exe
+
+esc:
+	gcc -o h.exe esc.c $(src) $(flags)
+	./h.exe

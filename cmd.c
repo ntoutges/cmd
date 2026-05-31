@@ -116,48 +116,66 @@ bool cmd_recv(cmd_t* cmd, char ch) {
             return false;
 
         case CMD_RECV_COMMAND:
+        case CMD_RECV_COMMAND_E:
+        case CMD_RECV_COMMAND_I:
+        case CMD_RECV_COMMAND_IE:
             
-            // Quote not preceded by backslash indicates start of an inhibited token
-            if (ch == '"' && (cmd->buf.chr_len == 0 || cmd->buf.buf[cmd->buf.chr_len - 1] != '\\')) {
-                cmd->state = CMD_RECV_COMMAND_I;
-                return true;
-            }
+            // Not currently in escape mode
+            // Process special characters
+            if (
+                cmd->state != CMD_RECV_COMMAND_E
+                && cmd->state != CMD_RECV_COMMAND_IE
+            ) {
 
-            // New space indicates end of command token; Attempt to analyze and cache new token
-            if (ch == ' ' && (cmd->buf.chr_len > 0 && cmd->buf.buf[cmd->buf.chr_len - 1] != ' ')) {
-
-                // Cache update failed; Drop command and wait for newline to reset
-                if (!_cmd_update_cache(cmd)) {
-                    cmd->state = CMD_RECV_FULL;
+                // Move to escape mode if we see a '\' character
+                if (ch == '\\') {
+                    cmd->state = cmd->state == CMD_RECV_COMMAND
+                        ? CMD_RECV_COMMAND_E
+                        : CMD_RECV_COMMAND_IE;
+                    break;
                 }
 
-                return true;
+                // Quote indicates start/end of an inhibited tokens
+                if (ch == '"') {
+                    cmd->state = cmd->state == CMD_RECV_COMMAND
+                        ? CMD_RECV_COMMAND_I
+                        : CMD_RECV_COMMAND;
+                    return true;
+                }
+            }
+            
+            // Move out of escape mode
+            else {
+                cmd->state = cmd->state == CMD_RECV_COMMAND_E
+                    ? CMD_RECV_COMMAND
+                    : CMD_RECV_COMMAND_I;
             }
 
+            // Not currently in inhibit mode
+            // Process spaces as normal
+            if (cmd->state != CMD_RECV_COMMAND_I) {
+
+                // New space indicates end of command token; Attempt to analyze and cache new token
+                if (ch == ' ' && (cmd->buf.chr_len > 0 && cmd->buf.buf[cmd->buf.chr_len - 1] != ' ')) {
+
+                    // Cache update failed; Drop command and wait for newline to reset
+                    if (!_cmd_update_cache(cmd)) {
+                        cmd->state = CMD_RECV_FULL;
+                    }
+
+                    return true;
+                }
+            }
+
+            // Plain character; Process as normal
             if (cmd->buf.chr_len <= cmd->buf.cch_idx) {
                 cmd->buf.buf[cmd->buf.chr_len++] = ch;
                 return true;
             }
+
             // Buffer overflow; Drop command and wait for newline to reset
             cmd->state = CMD_RECV_FULL;
             return false;
-        
-        case CMD_RECV_COMMAND_I:
-            // Quote not preceded by backslash indicates end of inhibited token
-            if (ch == '"' && (cmd->buf.chr_len == 0 || cmd->buf.buf[cmd->buf.chr_len - 1] != '\\')) {
-                cmd->state = CMD_RECV_COMMAND;
-                return true;
-            }
-
-            // Ensure enough space is left for the next flag cache entry describing this token
-            if (cmd->buf.chr_len + 1 < cmd->buf.cch_idx) {
-                cmd->buf.buf[cmd->buf.chr_len++] = ch;
-                return true;
-            }
-
-            // Ran out of space in buffer; Drop command and wait for newline to reset
-            cmd->state = CMD_RECV_FULL;
-            return true;
 
         case CMD_RECV_FULL:
             // Buffer overflow; Drop command and wait for newline to reset
