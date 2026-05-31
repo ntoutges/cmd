@@ -169,6 +169,15 @@ bool cmd_send(cmd_t* cmd, char ch);
 bool cmd_sends(cmd_t* cmd, const char* str);
 
 /**
+ * Send a raw string across the `cmd` bridge
+ * @param cmd   The command handler to trigger. Pass in NULL to use the "current" command handler. If none exist, NOPs and returns false
+ * @param str   The null-terminated string to send. Note that this function does _not_ automatically add a `\n` character
+ * Escapes special characters '"' and '\'
+ * @returns     true if the string was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_sendr(cmd_t* cmd, const char* str);
+
+/**
  * Send a full integer across the `cmd` bridge
  * @param cmd   The command handler to trigger. Pass in NULL to use the "current" command handler. If none exist, NOPs and returns false
  * @param i     The integer to send. Note that this function does _not_ automatically add a `\n` character
@@ -299,6 +308,15 @@ bool cmd_csend(char ch);
  * @returns     true if the string was sent (command handler exists and is not read-only), false otherwise
  */
 bool cmd_csends(const char* str);
+
+/**
+ * Send a raw string across the `cmd` bridge using the current command instance
+ * If no current command is registered, this NOPs and returns `false`
+ * @param str   The null-terminated string to send. Note that this function does _not_ automatically add a `\n` character
+ * Escapes special characters '"' and '\'
+ * @returns     true if the string was sent (command handler exists and is not read-only), false otherwise
+ */
+bool cmd_csendr(const char* str);
 
 /**
  * Send a full integer across the `cmd` bridge using the current command instance

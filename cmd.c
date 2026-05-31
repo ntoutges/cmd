@@ -233,6 +233,26 @@ bool cmd_sends(cmd_t* cmd, const char* str) {
     return true;
 }
 
+bool cmd_sendr(cmd_t* cmd, const char* str) {
+    if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
+    if (cmd == NULL) return false;           // Return failure code
+    if (cmd->send == 0x00) return false;     // Read-only; Fail!
+
+    // Send full string
+    for (uint32_t i = 0; str[i]; i++) {
+        char ch = str[i];
+
+        // Prepend with escape if required
+        if (ch == '"' || ch == '\\') {
+            cmd->send('\\');
+        }
+
+        cmd->send(ch);
+    }
+
+    return true;
+}
+
 bool cmd_sendi(cmd_t* cmd, int32_t i) {
     if (cmd == NULL) cmd = _cmd_current_cmd; // Grab default
     if (cmd == NULL) return false;           // Return failure code
@@ -418,6 +438,7 @@ bool cmd_crecv(char ch)                                                         
 bool cmd_crecvs(const char* str)                                                { return cmd_recvs(_cmd_current_cmd, str); }
 bool cmd_csend(char ch)                                                         { return cmd_send(_cmd_current_cmd, ch); }
 bool cmd_csends(const char* str)                                                { return cmd_sends(_cmd_current_cmd, str); }
+bool cmd_csendr(const char* str)                                                { return cmd_sendr(_cmd_current_cmd, str); }
 bool cmd_csendi(cmd_t* cmd, int32_t i)                                          { return cmd_sendi(_cmd_current_cmd, i); }
 bool cmd_csendf(cmd_t* cmd, float f)                                            { return cmd_sendf(_cmd_current_cmd, f); }
 uint8_t cmd_cattach(const char* command, void (*cb)(void* args), void* args)    { return cmd_attach(_cmd_current_cmd, command, cb, args); }
