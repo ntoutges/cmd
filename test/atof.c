@@ -10,6 +10,9 @@ int main() {
         assert(cmd_str_atof((cmd_str_ftoma(i, buf, sizeof(buf)))) == i);
     }
 
+    // Ensure negative values are preceeded by a '+' to prevent confusion with flags
+    assert(cmd_str_ftoma(-1, buf, sizeof(buf))[0] == '+');
+
     // ZERO
     assert(cmd_str_atof("") == 0);
     assert(cmd_str_atof(NULL) == 0);

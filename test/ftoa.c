@@ -7,7 +7,7 @@ int main() {
 
     // Check basic ints
     for (int i = -99; i < 256; i++) {
-        assert(atoi(cmd_str_ftoma(i, buf, 4)) == i);
+        assert(cmd_str_atoi(cmd_str_ftoma(i, buf, 5)) == i);
     }
 
     // // Basic checks
@@ -34,9 +34,9 @@ int main() {
     assert(strcmp(cmd_str_ftoma(1.234e8, buf, 4), "1E8") == 0);
     assert(strcmp(cmd_str_ftoma(1.234e9, buf, 4), "1E9") == 0);
     assert(strcmp(cmd_str_ftoma(1.234e10, buf, 4), "Inf") == 0);
-    assert(strcmp(cmd_str_ftoma(-1.234e0, buf, 4), "-1") == 0);
-    assert(strcmp(cmd_str_ftoma(-1.234e1, buf, 4), "-12") == 0);
-    assert(strcmp(cmd_str_ftoma(-1.234e2, buf, 4), "-I") == 0);
+    assert(strcmp(cmd_str_ftoma(-1.234e0, buf, 4), "+-1") == 0);
+    assert(strcmp(cmd_str_ftoma(-1.234e1, buf, 4), "+-I") == 0);
+    assert(strcmp(cmd_str_ftoma(-1.234e2, buf, 4), "+-I") == 0);
 
     // Infinity Compression Tests
     assert(strcmp(cmd_str_ftoma(INFINITY, buf, sizeof(buf)), "Infinity") == 0);
@@ -45,13 +45,14 @@ int main() {
     assert(strcmp(cmd_str_ftoma(INFINITY, buf, 4), "Inf") == 0);
     assert(strcmp(cmd_str_ftoma(INFINITY, buf, 3), "I") == 0);
     assert(strcmp(cmd_str_ftoma(INFINITY, buf, 2), "I") == 0);
-    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, sizeof(buf)), "-Infinity") == 0);
-    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 10), "-Infinity") == 0);
-    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 9), "-Inf") == 0);
-    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 5), "-Inf") == 0);
-    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 4), "-I") == 0);
-    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 3), "-I") == 0);
-    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 2), "-") == 0);
+    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, sizeof(buf)), "+-Infinity") == 0);
+    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 11), "+-Infinity") == 0);
+    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 10), "+-Inf") == 0);
+    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 6), "+-Inf") == 0);
+    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 5), "+-I") == 0);
+    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 4), "+-I") == 0);
+    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 3), "+") == 0);
+    assert(strcmp(cmd_str_ftoma(-INFINITY, buf, 2), "+") == 0);
 
     // NaN Compression Tests
     assert(strcmp(cmd_str_ftoma(NAN, buf, sizeof(buf)), "NaN") == 0);

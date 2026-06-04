@@ -7,12 +7,12 @@ int main() {
 
     // Check all 16-bit ints
     for (int i = -32768; i < 32768; i++) {
-        assert(atoi(cmd_str_itoa(i, buf, sizeof(buf))) == i);
+        assert(cmd_str_atoi(cmd_str_itoa(i, buf, sizeof(buf))) == i);
     }
 
     // Check extremes
-    assert(atoi(cmd_str_itoa(2147483647, buf, sizeof(buf))) == 2147483647);
-    assert(atoi(cmd_str_itoa(-2147483648, buf, sizeof(buf))) == -2147483648);
+    assert(cmd_str_atoi(cmd_str_itoa(2147483647, buf, sizeof(buf))) == 2147483647);
+    assert(cmd_str_atoi(cmd_str_itoa(-2147483648, buf, sizeof(buf))) == -2147483648);
 
     printf("All itoa test cases passed successfully!\n");
 

@@ -35,20 +35,21 @@ char* cmd_str_ftoma(double val, char* buf, int size) {
     // Immediately handle negatives
     // Beyond this condition, `val` is garunteed to be >= 0
     if (val < 0) {
-        
-        // Append '-' to buffer
-        buf[0] = '-';
-        buf = buf + 1;
-        size--;
 
-        val = -val;
+        // Append '+-' to buffer
+        buf[0] = '+';
 
         // Out of space in buffer
         // Push NULL byte then give up
-        if (size == 1) {
-            buf[0] = 0x00;
+        if (size <= 3) {
+            buf[1] = 0x00;
             return start;
         }
+
+        buf[1] = '-';
+        buf = buf + 2;
+        size -= 2;
+        val = -val;
     }
 
     // Ensure value isn't infinite
@@ -92,6 +93,30 @@ char* cmd_str_ftoma(double val, char* buf, int size) {
 }
 
 char* cmd_str_itoa(int32_t val, char* buf, int size) {
+
+    // Invalid sizes (not enough space to do anything)
+    if (size == 0) return buf;
+    if (size < 2) {
+        buf[0] = 0x00;
+        return buf;
+    }
+
+    char* obuf = buf;
+
+    if (val < 0) {
+
+        // Add numeric indicator if required
+        buf[0] = '+';
+        buf = &(buf[1]);
+        size--;
+
+        // Invalid size (not enough space!)
+        if (size < 2) {
+            buf[0] = 0x00;
+            return obuf;
+        }
+    }
+
     int len = _cmd_str_itoa(val, false, buf, size - 1);
     
     // Unable to fit string in space
@@ -101,7 +126,7 @@ char* cmd_str_itoa(int32_t val, char* buf, int size) {
     // Add NULL terminator
     else buf[len] = 0x00;
 
-    return buf;
+    return obuf;
 }
 
 double cmd_str_atof(char* buf) {
@@ -109,6 +134,11 @@ double cmd_str_atof(char* buf) {
 
     bool neg = false;
     float val = 0;
+
+    // Advance buffer if first character is numeric indicator
+    if (buf[0] == '+') {
+        buf = &(buf[1]);
+    }
 
     // Account for negative numbers
     if (buf[0] == '-') {
@@ -140,6 +170,11 @@ double cmd_str_atof(char* buf) {
 
 int32_t cmd_str_atoi(char* buf) {
     if (buf == NULL) return 0; // Invalid buffer; Parse as 0
+
+    // Advance buffer if first character is numeric indicator
+    if (buf[0] == '+') {
+        buf = &(buf[1]);
+    }
 
     // No special cases to handle
     return atoi(buf);

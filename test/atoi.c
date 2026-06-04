@@ -10,6 +10,9 @@ int main() {
         assert(cmd_str_atoi((cmd_str_itoa(i, buf, sizeof(buf)))) == i);
     }
 
+    // Ensure negative values are preceeded by a '+' to prevent confusion with flags
+    assert(cmd_str_itoa(-1, buf, sizeof(buf))[0] == '+');
+
     // Zeroes
     assert(cmd_str_atoi(NULL) == 0);
     assert(cmd_str_atoi("") == 0);
