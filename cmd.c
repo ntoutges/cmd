@@ -132,7 +132,7 @@ bool cmd_recv(cmd_t* cmd, char ch) {
                     cmd->state = cmd->state == CMD_RECV_COMMAND
                         ? CMD_RECV_COMMAND_E
                         : CMD_RECV_COMMAND_IE;
-                    break;
+                    return true;
                 }
 
                 // Quote indicates start/end of an inhibited tokens
@@ -175,7 +175,7 @@ bool cmd_recv(cmd_t* cmd, char ch) {
 
             // Buffer overflow; Drop command and wait for newline to reset
             cmd->state = CMD_RECV_FULL;
-            return false;
+            return true;
 
         case CMD_RECV_FULL:
             // Buffer overflow; Drop command and wait for newline to reset
@@ -492,7 +492,7 @@ bool _cmd_update_cache(cmd_t* cmd) {
     // Ensure token is long enough to be some valid flag
     if (cmd->last_cache + 1 >= cmd->buf.chr_len) {
         cmd->buf.chr_len = cmd->last_cache; // Drop invalid from buffer
-        return false; // String too short to be a valid flag
+        return true; // String too short to be a valid flag; However, not out of memory
     }
 
     // Token is single-character flag; Assume ordered flags
