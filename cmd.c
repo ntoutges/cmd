@@ -263,7 +263,6 @@ bool cmd_sendi(cmd_t* cmd, int32_t i) {
     cmd_str_itoa(i, buf, sizeof(buf));
 
     // Send converted string
-    cmd_send(cmd, '+');
     cmd_sends(cmd, buf);
 
     return true;
@@ -279,7 +278,6 @@ bool cmd_sendf(cmd_t* cmd, float f) {
     cmd_str_ftoma(f, buf, sizeof(buf));
 
     // Send converted string
-    cmd_send(cmd, '+');
     cmd_sends(cmd, buf);
 
     return true;
